@@ -1,0 +1,17 @@
+# ClusterIP: os outros servicos chegam pelo DNS do cluster
+# (oficina-mecanica-execucao.oficina-mecanica.svc.cluster.local). A exposicao externa pelo
+# API Gateway e definida na F4-14.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oficina-mecanica-execucao
+  labels:
+    app: oficina-mecanica-execucao
+    app.kubernetes.io/part-of: oficina-mecanica
+spec:
+  type: ClusterIP
+  selector:
+    app: oficina-mecanica-execucao
+  ports:
+    - port: 80
+      targetPort: 8080

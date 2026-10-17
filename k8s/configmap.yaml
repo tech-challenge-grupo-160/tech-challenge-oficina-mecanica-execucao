@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oficina-mecanica-execucao-config
+  labels:
+    app: oficina-mecanica-execucao
+    app.kubernetes.io/part-of: oficina-mecanica
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_URLS: "http://+:8080"

@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="src/API/Fiap.TechChallenge.OficinaMecanica.Execucao.Api.csproj" />
+  <Project Path="src/Application/Fiap.TechChallenge.OficinaMecanica.Execucao.Application.csproj" />
+  <Project Path="src/Domain/Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.csproj" />
+  <Project Path="src/Infrastructure/Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.csproj" />
+  <Project Path="tests/Fiap.TechChallenge.OficinaMecanica.Execucao.Test.IntegrationTests/Fiap.TechChallenge.OficinaMecanica.Execucao.Test.IntegrationTests.csproj" />
+  <Project Path="tests/Fiap.TechChallenge.OficinaMecanica.Execucao.Test.UnitTests/Fiap.TechChallenge.OficinaMecanica.Execucao.Test.UnitTests.csproj" />
+</Solution>
