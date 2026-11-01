@@ -46,6 +46,14 @@ dotnet run --project src/API/Fiap.TechChallenge.OficinaMecanica.Execucao.Api.csp
 
 Ou com Docker:
 
+Crie um arquivo `.env` local (ignorado pelo Git) com a senha do PostgreSQL e a
+connection string utilizada pela API:
+
+```dotenv
+POSTGRES_PASSWORD=<senha-local>
+API_CONNECTION_STRING=Host=postgres;Database=oficina_execucao;Username=postgres;Password=<senha-local>
+```
+
 ```bash
 docker compose up --build
 ```

@@ -15,7 +15,8 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=localhost;Port=5433;Database=oficina_execucao;Username=postgres;Password=postgres";
+            ?? throw new InvalidOperationException(
+                "A connection string 'DefaultConnection' nao foi configurada.");
 
         services.AddDbContext<ExecucaoDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
