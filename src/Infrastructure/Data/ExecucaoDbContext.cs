@@ -8,6 +8,7 @@ public sealed class ExecucaoDbContext(DbContextOptions<ExecucaoDbContext> option
 {
     public DbSet<Servico> Servicos => Set<Servico>();
     public DbSet<Peca> Pecas => Set<Peca>();
+    public DbSet<Diagnostico> Diagnosticos => Set<Diagnostico>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
