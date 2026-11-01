@@ -68,6 +68,7 @@ public static class ApiProblemDetails
             StatusCodes.Status400BadRequest => "Requisicao invalida.",
             StatusCodes.Status401Unauthorized => "Nao autorizado.",
             StatusCodes.Status404NotFound => "Recurso nao encontrado.",
+            StatusCodes.Status409Conflict => "Conflito ao processar a requisicao.",
             StatusCodes.Status500InternalServerError => "Erro interno no servidor.",
             _ => "Erro ao processar a requisicao."
         };

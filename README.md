@@ -14,7 +14,7 @@ Faz parte da divisão definida na [ADR-0003](https://github.com/tech-challenge-g
 | Billing | [tech-challenge-oficina-mecanica-billing](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-billing) |
 | Execução | [tech-challenge-oficina-mecanica-execucao](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-execucao) |
 
-> **Estado:** primeiro corte funcional implementado. O catálogo de serviços e peças já possui PostgreSQL próprio e contrato interno de consulta em lote. Diagnóstico, execução e mensageria entram nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
+> **Estado:** catálogo próprio e abertura idempotente do diagnóstico implementados. Itens diagnosticados, reparo e mensageria entram nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
 
 ## Stack
 

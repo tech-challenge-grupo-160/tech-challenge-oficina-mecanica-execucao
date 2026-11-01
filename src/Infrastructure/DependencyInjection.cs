@@ -20,6 +20,7 @@ public static class DependencyInjection
 
         services.AddDbContext<ExecucaoDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
+        services.AddScoped<IDiagnosticoRepository, DiagnosticoRepository>();
         services
             .AddHealthChecks()
             .AddDbContextCheck<ExecucaoDbContext>(
