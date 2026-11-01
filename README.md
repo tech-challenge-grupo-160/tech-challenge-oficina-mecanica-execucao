@@ -14,7 +14,7 @@ Faz parte da divisão definida na [ADR-0003](https://github.com/tech-challenge-g
 | Billing | [tech-challenge-oficina-mecanica-billing](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-billing) |
 | Execução | [tech-challenge-oficina-mecanica-execucao](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-execucao) |
 
-> **Estado:** esqueleto inicial ([F4-07](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/issues/138)). O domínio, o banco e a mensageria entram nas próximas tasks do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
+> **Estado:** primeiro corte funcional implementado. O catálogo de serviços e peças já possui PostgreSQL próprio e contrato interno de consulta em lote. Diagnóstico, execução e mensageria entram nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
 
 ## Stack
 
@@ -57,6 +57,10 @@ A API sobe em `http://localhost:8082`, com Swagger em `/swagger` no ambiente de 
 | `/health/live` | O processo está de pé (liveness do Kubernetes) |
 | `/health/ready` | O serviço e suas dependências estão prontos (readiness) |
 | `/health` | Relatório completo em JSON |
+
+O PostgreSQL da Execucao fica exposto em `localhost:5433` e usa o database `oficina_execucao`. As migrations e o seed inicial sao aplicados na inicializacao da API.
+
+O endpoint interno `POST /api/v1/catalogo/itens/consultar` fornece snapshots comerciais ao OS Service sem expor estoque. Consulte [os contratos internos](docs/API_CONTRACTS.md).
 
 ## Testes
 
