@@ -11,6 +11,7 @@ public sealed class DiagnosticoConfiguration : IEntityTypeConfiguration<Diagnost
         builder.ToTable("Diagnostico");
         builder.HasKey(diagnostico => diagnostico.Id);
         builder.Property(diagnostico => diagnostico.Id).UseIdentityByDefaultColumn();
+        builder.Property(diagnostico => diagnostico.CorrelationId).IsRequired();
         builder.Property(diagnostico => diagnostico.OrdemServicoId).IsRequired();
         builder.Property(diagnostico => diagnostico.VeiculoId).IsRequired();
         builder.Property(diagnostico => diagnostico.DescricaoSolicitacao)
@@ -31,6 +32,7 @@ public sealed class DiagnosticoConfiguration : IEntityTypeConfiguration<Diagnost
         builder.Property(diagnostico => diagnostico.IniciadoEm).IsRequired();
         builder.Property(diagnostico => diagnostico.ParecerTecnico).HasMaxLength(2000);
         builder.Property(diagnostico => diagnostico.ResultadoAtualizadoEm);
+        builder.Property(diagnostico => diagnostico.ConcluidoEm);
         builder.Property(diagnostico => diagnostico.Versao)
             .IsRequired()
             .IsConcurrencyToken();

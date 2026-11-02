@@ -252,6 +252,47 @@ public sealed class DiagnosticosControllerTests : IClassFixture<CustomWebApplica
             .Should().Be(4);
     }
 
+    [Fact]
+    public async Task Concluir_DeveExigirResultadoTecnico()
+    {
+        await EnviarAsync(CriarPayload(3015, 1001), "iniciar-diagnostico:3015");
+
+        var response = await _client.PatchAsync(
+            "/api/v1/diagnosticos/ordem-servico/3015/concluir",
+            null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Concluir_DevePersistirEventoUmaUnicaVez()
+    {
+        await EnviarAsync(CriarPayload(3016, 1001), "iniciar-diagnostico:3016");
+        await _client.PutAsJsonAsync(
+            "/api/v1/diagnosticos/ordem-servico/3016/resultado",
+            CriarResultadoPayload());
+
+        var primeira = await _client.PatchAsync(
+            "/api/v1/diagnosticos/ordem-servico/3016/concluir",
+            null);
+        var repetida = await _client.PatchAsync(
+            "/api/v1/diagnosticos/ordem-servico/3016/concluir",
+            null);
+
+        primeira.StatusCode.Should().Be(HttpStatusCode.OK);
+        repetida.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = JsonDocument.Parse(await primeira.Content.ReadAsStringAsync());
+        json.RootElement.GetProperty("status").GetString().Should().Be("Concluido");
+        json.RootElement.GetProperty("servicos").GetArrayLength().Should().Be(1);
+        json.RootElement.GetProperty("pecas")[0].GetProperty("quantidade").GetInt32().Should().Be(2);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ExecucaoDbContext>();
+        (await context.OutboxMessages.CountAsync(item =>
+                item.Tipo == "DiagnosticoConcluidoMessage"))
+            .Should().Be(1);
+    }
+
     private async Task<HttpResponseMessage> EnviarAsync(object payload, string chave)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/diagnosticos")

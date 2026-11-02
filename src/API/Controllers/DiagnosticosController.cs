@@ -92,6 +92,22 @@ public sealed class DiagnosticosController(
         return Ok(Mapear(result));
     }
 
+    [HttpPatch("ordem-servico/{ordemServicoId:int}/concluir")]
+    [ProducesResponseType<ConclusaoDiagnosticoResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ConclusaoDiagnosticoResponse>> Concluir(
+        int ordemServicoId,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new ConcluirDiagnosticoCommand(ordemServicoId),
+            cancellationToken);
+
+        return Ok(Mapear(result));
+    }
+
     private static DiagnosticoResponse Mapear(IniciarDiagnosticoResult result) => new(
         result.Id,
         result.OrdemServicoId,
@@ -112,4 +128,21 @@ public sealed class DiagnosticosController(
             .ToArray(),
         result.AtualizadoEm,
         result.Versao);
+
+    private static ConclusaoDiagnosticoResponse Mapear(ConclusaoDiagnosticoResult result) => new(
+        result.DiagnosticoId,
+        result.OrdemServicoId,
+        result.Status,
+        result.ParecerTecnico,
+        result.Servicos.Select(item => new ServicoConclusaoDiagnosticoResponse(
+            item.ServicoId,
+            item.Nome,
+            item.Preco,
+            item.TempoEstimado)).ToArray(),
+        result.Pecas.Select(item => new PecaConclusaoDiagnosticoResponse(
+            item.PecaId,
+            item.Nome,
+            item.Quantidade,
+            item.Preco)).ToArray(),
+        result.ConcluidoEm);
 }

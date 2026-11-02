@@ -35,6 +35,12 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTimeOffset?>("ConcluidoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("DescricaoSolicitacao")
                         .IsRequired()
                         .HasMaxLength(1000)

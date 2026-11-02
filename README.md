@@ -14,7 +14,7 @@ Faz parte da divisão definida na [ADR-0003](https://github.com/tech-challenge-g
 | Billing | [tech-challenge-oficina-mecanica-billing](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-billing) |
 | Execução | [tech-challenge-oficina-mecanica-execucao](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-execucao) |
 
-> **Estado:** catálogo próprio, início assíncrono e idempotente do diagnóstico via SQS, publicação de evento via SNS e registro do resultado técnico implementados. Conclusão e reparo entram nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
+> **Estado:** catálogo próprio e jornada de diagnóstico implementados. O início chega por SQS; resultado e conclusão pertencem à Execução; os eventos de início e conclusão são publicados via SNS usando Outbox/Inbox e idempotência. Reparo entra nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
 
 ## Stack
 

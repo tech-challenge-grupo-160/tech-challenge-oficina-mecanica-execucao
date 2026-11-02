@@ -149,3 +149,16 @@ exige ao menos um servico, enquanto a lista de pecas pode ser vazia.
 
 Retorna `200 OK` com o contrato acima. Retorna `404 Not Found` quando o
 diagnostico nao existe ou ainda nao possui resultado registrado.
+
+## Concluir diagnostico
+
+`PATCH /api/v1/diagnosticos/ordem-servico/{ordemServicoId}/concluir`
+
+Conclui um diagnostico que ja possui parecer e ao menos um servico no resultado
+tecnico. A operacao altera o status para `Concluido` e grava o evento
+`DiagnosticoConcluidoMessage` na Outbox na mesma transacao. O publicador envia o
+evento ao topico SNS `oficina-eventos`; o OS Service o recebe pela sua fila SQS e
+avanca a OS de `EmDiagnostico` para `AguardandoOrcamento`.
+
+A repeticao retorna `200 OK` sem criar outro evento. Diagnostico inexistente
+retorna `404 Not Found`; tentativa sem resultado tecnico retorna `400 Bad Request`.

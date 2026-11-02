@@ -43,7 +43,8 @@ public sealed class IniciarDiagnosticoCommandHandler(
             servicoIds,
             pecaIds,
             request.ChaveIdempotencia,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            request.CorrelationId);
 
         var (diagnostico, criado) = await diagnosticoRepository.CriarOuObterAsync(
             candidato,

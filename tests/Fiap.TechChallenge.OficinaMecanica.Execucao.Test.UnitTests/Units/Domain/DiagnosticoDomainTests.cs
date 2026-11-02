@@ -90,6 +90,34 @@ public sealed class DiagnosticoDomainTests
         action.Should().Throw<ArgumentException>();
     }
 
+    [Fact]
+    public void Concluir_DeveExigirResultadoTecnico()
+    {
+        var diagnostico = CriarDiagnostico();
+
+        var action = () => diagnostico.Concluir(DateTimeOffset.UtcNow);
+
+        action.Should().Throw<InvalidOperationException>();
+        diagnostico.Status.Should().Be("EmDiagnostico");
+    }
+
+    [Fact]
+    public void Concluir_DeveAlterarStatusEManterIdempotencia()
+    {
+        var diagnostico = CriarDiagnostico();
+        diagnostico.RegistrarResultado("Parecer", [1000], [(2000, 2)], DateTimeOffset.UtcNow);
+        var concluidoEm = new DateTimeOffset(2026, 11, 2, 1, 0, 0, TimeSpan.Zero);
+
+        var primeira = diagnostico.Concluir(concluidoEm);
+        var repetida = diagnostico.Concluir(concluidoEm.AddMinutes(1));
+
+        primeira.Should().BeTrue();
+        repetida.Should().BeFalse();
+        diagnostico.Status.Should().Be("Concluido");
+        diagnostico.ConcluidoEm.Should().Be(concluidoEm);
+        diagnostico.Versao.Should().Be(2);
+    }
+
     private static Diagnostico CriarDiagnostico() => Diagnostico.Iniciar(
         3001,
         1001,

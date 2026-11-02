@@ -8,7 +8,8 @@ public sealed record IniciarDiagnosticoCommand(
     string DescricaoSolicitacao,
     IReadOnlyCollection<int> ServicoIdsSolicitados,
     IReadOnlyCollection<int> PecaIdsSolicitadas,
-    string ChaveIdempotencia) : IRequest<IniciarDiagnosticoResult>;
+    string ChaveIdempotencia,
+    Guid CorrelationId = default) : IRequest<IniciarDiagnosticoResult>;
 
 public sealed record IniciarDiagnosticoResult(
     int Id,

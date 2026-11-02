@@ -89,7 +89,8 @@ public sealed class InicioDiagnosticoConsumerWorker(
                 comando.DescricaoSolicitacao,
                 comando.ServicoIdsSolicitados,
                 comando.PecaIdsSolicitadas,
-                $"iniciar-diagnostico:{comando.OrdemServicoId}"), cancellationToken);
+                $"iniciar-diagnostico:{comando.OrdemServicoId}",
+                comando.CorrelationId), cancellationToken);
 
             var evento = new DiagnosticoIniciadoMessage(
                 Guid.NewGuid(),
