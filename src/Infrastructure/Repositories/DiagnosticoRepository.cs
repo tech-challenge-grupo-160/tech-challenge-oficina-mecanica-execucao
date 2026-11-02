@@ -73,6 +73,23 @@ public sealed class DiagnosticoRepository(ExecucaoDbContext context) : IDiagnost
         }
     }
 
+    public async Task ConcluirAsync(
+        Diagnostico diagnostico,
+        OutboxMessage evento,
+        CancellationToken cancellationToken)
+    {
+        context.OutboxMessages.Add(evento);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ServiceConflictException(
+                "O diagnostico foi alterado por outra requisicao. Consulte-o e tente novamente.");
+        }
+    }
+
     private async Task<Diagnostico?> ObterExistenteAsync(
         Diagnostico diagnostico,
         CancellationToken cancellationToken)

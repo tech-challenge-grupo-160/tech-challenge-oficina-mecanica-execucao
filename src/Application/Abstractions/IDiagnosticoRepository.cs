@@ -19,4 +19,9 @@ public interface IDiagnosticoRepository
     Task AtualizarAsync(
         Diagnostico diagnostico,
         CancellationToken cancellationToken);
+
+    Task ConcluirAsync(
+        Diagnostico diagnostico,
+        OutboxMessage evento,
+        CancellationToken cancellationToken);
 }

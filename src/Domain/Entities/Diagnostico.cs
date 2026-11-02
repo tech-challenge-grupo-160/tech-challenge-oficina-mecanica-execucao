@@ -8,6 +8,7 @@ public sealed class Diagnostico
     private Diagnostico() { }
 
     public int Id { get; private set; }
+    public Guid CorrelationId { get; private set; }
     public int OrdemServicoId { get; private set; }
     public int VeiculoId { get; private set; }
     public string DescricaoSolicitacao { get; private set; } = null!;
@@ -18,6 +19,7 @@ public sealed class Diagnostico
     public DateTimeOffset IniciadoEm { get; private set; }
     public string? ParecerTecnico { get; private set; }
     public DateTimeOffset? ResultadoAtualizadoEm { get; private set; }
+    public DateTimeOffset? ConcluidoEm { get; private set; }
     public int Versao { get; private set; }
     public IReadOnlyCollection<DiagnosticoServicoResultado> ServicosResultado => _servicosResultado;
     public IReadOnlyCollection<DiagnosticoPecaResultado> PecasResultado => _pecasResultado;
@@ -29,7 +31,8 @@ public sealed class Diagnostico
         IEnumerable<int> servicoIdsSolicitados,
         IEnumerable<int> pecaIdsSolicitadas,
         string chaveIdempotencia,
-        DateTimeOffset iniciadoEm)
+        DateTimeOffset iniciadoEm,
+        Guid correlationId = default)
     {
         if (ordemServicoId <= 0)
             throw new ArgumentException("OrdemServicoId deve ser maior que zero.", nameof(ordemServicoId));
@@ -49,6 +52,7 @@ public sealed class Diagnostico
 
         return new Diagnostico
         {
+            CorrelationId = correlationId,
             OrdemServicoId = ordemServicoId,
             VeiculoId = veiculoId,
             DescricaoSolicitacao = descricaoSolicitacao.Trim(),
@@ -61,6 +65,7 @@ public sealed class Diagnostico
     }
 
     public bool CorrespondeA(Diagnostico outro) =>
+        CorrelationId == outro.CorrelationId &&
         OrdemServicoId == outro.OrdemServicoId &&
         VeiculoId == outro.VeiculoId &&
         string.Equals(DescricaoSolicitacao, outro.DescricaoSolicitacao, StringComparison.Ordinal) &&
@@ -110,6 +115,24 @@ public sealed class Diagnostico
         _pecasResultado.AddRange(pecasNormalizadas.Select(item =>
             DiagnosticoPecaResultado.Criar(item.PecaId, item.Quantidade)));
 
+        return true;
+    }
+
+    public bool Concluir(DateTimeOffset concluidoEm)
+    {
+        if (string.Equals(Status, "Concluido", StringComparison.Ordinal))
+            return false;
+        if (!string.Equals(Status, "EmDiagnostico", StringComparison.Ordinal))
+            throw new InvalidOperationException($"O diagnostico nao pode ser concluido no status {Status}.");
+        if (ParecerTecnico is null || ResultadoAtualizadoEm is null || _servicosResultado.Count == 0)
+            throw new InvalidOperationException(
+                "O diagnostico precisa possuir resultado tecnico e ao menos um servico antes da conclusao.");
+
+        Status = "Concluido";
+        ConcluidoEm = new DateTimeOffset(
+            concluidoEm.Ticks - concluidoEm.Ticks % TimeSpan.TicksPerMicrosecond,
+            concluidoEm.Offset);
+        Versao++;
         return true;
     }
 
