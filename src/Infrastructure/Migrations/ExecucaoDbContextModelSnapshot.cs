@@ -46,9 +46,16 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                     b.Property<int>("OrdemServicoId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ParecerTecnico")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.PrimitiveCollection<int[]>("PecaIdsSolicitadas")
                         .IsRequired()
                         .HasColumnType("integer[]");
+
+                    b.Property<DateTimeOffset?>("ResultadoAtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
 
                     b.PrimitiveCollection<int[]>("ServicoIdsSolicitados")
                         .IsRequired()
@@ -62,6 +69,10 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                     b.Property<int>("VeiculoId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Versao")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChaveIdempotencia")
@@ -73,6 +84,102 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                     b.ToTable("Diagnostico", (string)null);
                 });
 
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.DiagnosticoPecaResultado", b =>
+                {
+                    b.Property<int>("DiagnosticoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PecaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("integer");
+
+                    b.HasKey("DiagnosticoId", "PecaId");
+
+                    b.ToTable("DiagnosticoPecaResultado", (string)null);
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.DiagnosticoServicoResultado", b =>
+                {
+                    b.Property<int>("DiagnosticoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ServicoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("DiagnosticoId", "ServicoId");
+
+                    b.ToTable("DiagnosticoServicoResultado", (string)null);
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.InboxMessage", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ProcessadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("ProcessadoEm");
+
+                    b.ToTable("InboxMessage", (string)null);
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Destino")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTimeOffset?>("PublicadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UltimoErro")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PublicadoEm", "CriadoEm");
+
+                    b.ToTable("OutboxMessage", (string)null);
+                });
+
             modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.Peca", b =>
                 {
                     b.Property<int>("Id")
@@ -80,7 +187,7 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-                    NpgsqlPropertyBuilderExtensions.HasIdentityOptions(b.Property<int>("Id"), 1001L, null, null, null, null, null);
+                    NpgsqlPropertyBuilderExtensions.HasIdentityOptions(b.Property<int>("Id"), 2000L, null, null, null, null, null);
 
                     b.Property<bool>("Ativa")
                         .HasColumnType("boolean");
@@ -124,6 +231,76 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                             Nome = "Pastilha de Freio",
                             Preco = 45m,
                             QuantidadeEstoque = 100
+                        },
+                        new
+                        {
+                            Id = 1001,
+                            Ativa = true,
+                            Marca = "Mobil",
+                            Modelo = "5W30-5L",
+                            Nome = "Oleo de Motor 5W30 - 5L",
+                            Preco = 189.90m,
+                            QuantidadeEstoque = 40
+                        },
+                        new
+                        {
+                            Id = 1002,
+                            Ativa = true,
+                            Marca = "Mann",
+                            Modelo = "W712-95",
+                            Nome = "Filtro de Oleo",
+                            Preco = 39.90m,
+                            QuantidadeEstoque = 60
+                        },
+                        new
+                        {
+                            Id = 1003,
+                            Ativa = true,
+                            Marca = "Fremax",
+                            Modelo = "BD-5298",
+                            Nome = "Disco de Freio",
+                            Preco = 219.90m,
+                            QuantidadeEstoque = 24
+                        },
+                        new
+                        {
+                            Id = 1004,
+                            Ativa = true,
+                            Marca = "Gates",
+                            Modelo = "5499XS",
+                            Nome = "Correia Dentada",
+                            Preco = 179.90m,
+                            QuantidadeEstoque = 20
+                        },
+                        new
+                        {
+                            Id = 1005,
+                            Ativa = true,
+                            Marca = "NGK",
+                            Modelo = "BKR6E",
+                            Nome = "Vela de Ignicao",
+                            Preco = 42.50m,
+                            QuantidadeEstoque = 80
+                        },
+                        new
+                        {
+                            Id = 1006,
+                            Ativa = true,
+                            Marca = "Tecfil",
+                            Modelo = "ACP-887",
+                            Nome = "Filtro de Ar-Condicionado",
+                            Preco = 49.90m,
+                            QuantidadeEstoque = 35
+                        },
+                        new
+                        {
+                            Id = 1007,
+                            Ativa = true,
+                            Marca = "Moura",
+                            Modelo = "M60GD",
+                            Nome = "Bateria 60Ah",
+                            Preco = 649.90m,
+                            QuantidadeEstoque = 12
                         });
                 });
 
@@ -134,7 +311,7 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-                    NpgsqlPropertyBuilderExtensions.HasIdentityOptions(b.Property<int>("Id"), 1001L, null, null, null, null, null);
+                    NpgsqlPropertyBuilderExtensions.HasIdentityOptions(b.Property<int>("Id"), 2000L, null, null, null, null, null);
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean");
@@ -167,11 +344,99 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         {
                             Id = 1000,
                             Ativo = true,
-                            Descricao = "Servico de alinhamento",
+                            Descricao = "Alinhamento da geometria das rodas",
                             Nome = "Alinhamento",
                             Preco = 150m,
                             TempoEstimado = 30
+                        },
+                        new
+                        {
+                            Id = 1001,
+                            Ativo = true,
+                            Descricao = "Troca do oleo do motor e do filtro de oleo",
+                            Nome = "Troca de Oleo",
+                            Preco = 180m,
+                            TempoEstimado = 45
+                        },
+                        new
+                        {
+                            Id = 1002,
+                            Ativo = true,
+                            Descricao = "Balanceamento das quatro rodas",
+                            Nome = "Balanceamento",
+                            Preco = 120m,
+                            TempoEstimado = 30
+                        },
+                        new
+                        {
+                            Id = 1003,
+                            Ativo = true,
+                            Descricao = "Inspecao de pastilhas, discos, fluido e componentes do freio",
+                            Nome = "Revisao do Sistema de Freios",
+                            Preco = 250m,
+                            TempoEstimado = 90
+                        },
+                        new
+                        {
+                            Id = 1004,
+                            Ativo = true,
+                            Descricao = "Leitura de modulos e falhas com scanner automotivo",
+                            Nome = "Diagnostico Eletronico",
+                            Preco = 200m,
+                            TempoEstimado = 60
+                        },
+                        new
+                        {
+                            Id = 1005,
+                            Ativo = true,
+                            Descricao = "Substituicao da correia dentada e verificacao dos tensionadores",
+                            Nome = "Troca da Correia Dentada",
+                            Preco = 650m,
+                            TempoEstimado = 180
+                        },
+                        new
+                        {
+                            Id = 1006,
+                            Ativo = true,
+                            Descricao = "Limpeza do sistema e substituicao do filtro de cabine",
+                            Nome = "Higienizacao do Ar-Condicionado",
+                            Preco = 160m,
+                            TempoEstimado = 60
+                        },
+                        new
+                        {
+                            Id = 1007,
+                            Ativo = true,
+                            Descricao = "Inspecao geral dos principais itens de seguranca e manutencao",
+                            Nome = "Revisao Preventiva",
+                            Preco = 500m,
+                            TempoEstimado = 150
                         });
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.DiagnosticoPecaResultado", b =>
+                {
+                    b.HasOne("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.Diagnostico", null)
+                        .WithMany("PecasResultado")
+                        .HasForeignKey("DiagnosticoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.DiagnosticoServicoResultado", b =>
+                {
+                    b.HasOne("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.Diagnostico", null)
+                        .WithMany("ServicosResultado")
+                        .HasForeignKey("DiagnosticoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.Diagnostico", b =>
+                {
+                    b.Navigation("PecasResultado");
+
+                    b.Navigation("ServicosResultado");
                 });
 #pragma warning restore 612, 618
         }
