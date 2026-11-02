@@ -6,6 +6,18 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Data.Config
 
 public sealed class PecaConfiguration : IEntityTypeConfiguration<Peca>
 {
+    private static readonly PecaSeed[] InitialData =
+    [
+        new(1000, "Pastilha de Freio", "Cobreq", "N-1234", 45m, 100, true),
+        new(1001, "Oleo de Motor 5W30 - 5L", "Mobil", "5W30-5L", 189.90m, 40, true),
+        new(1002, "Filtro de Oleo", "Mann", "W712-95", 39.90m, 60, true),
+        new(1003, "Disco de Freio", "Fremax", "BD-5298", 219.90m, 24, true),
+        new(1004, "Correia Dentada", "Gates", "5499XS", 179.90m, 20, true),
+        new(1005, "Vela de Ignicao", "NGK", "BKR6E", 42.50m, 80, true),
+        new(1006, "Filtro de Ar-Condicionado", "Tecfil", "ACP-887", 49.90m, 35, true),
+        new(1007, "Bateria 60Ah", "Moura", "M60GD", 649.90m, 12, true)
+    ];
+
     public void Configure(EntityTypeBuilder<Peca> builder)
     {
         builder.ToTable("Peca");
@@ -21,86 +33,15 @@ public sealed class PecaConfiguration : IEntityTypeConfiguration<Peca>
         builder.Property(item => item.Ativa).IsRequired();
         builder.HasIndex(item => new { item.Marca, item.Modelo }).IsUnique();
 
-        builder.HasData(
-            new
-            {
-                Id = 1000,
-                Nome = "Pastilha de Freio",
-                Marca = "Cobreq",
-                Modelo = "N-1234",
-                Preco = 45m,
-                QuantidadeEstoque = 100,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1001,
-                Nome = "Oleo de Motor 5W30 - 5L",
-                Marca = "Mobil",
-                Modelo = "5W30-5L",
-                Preco = 189.90m,
-                QuantidadeEstoque = 40,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1002,
-                Nome = "Filtro de Oleo",
-                Marca = "Mann",
-                Modelo = "W712-95",
-                Preco = 39.90m,
-                QuantidadeEstoque = 60,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1003,
-                Nome = "Disco de Freio",
-                Marca = "Fremax",
-                Modelo = "BD-5298",
-                Preco = 219.90m,
-                QuantidadeEstoque = 24,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1004,
-                Nome = "Correia Dentada",
-                Marca = "Gates",
-                Modelo = "5499XS",
-                Preco = 179.90m,
-                QuantidadeEstoque = 20,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1005,
-                Nome = "Vela de Ignicao",
-                Marca = "NGK",
-                Modelo = "BKR6E",
-                Preco = 42.50m,
-                QuantidadeEstoque = 80,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1006,
-                Nome = "Filtro de Ar-Condicionado",
-                Marca = "Tecfil",
-                Modelo = "ACP-887",
-                Preco = 49.90m,
-                QuantidadeEstoque = 35,
-                Ativa = true
-            },
-            new
-            {
-                Id = 1007,
-                Nome = "Bateria 60Ah",
-                Marca = "Moura",
-                Modelo = "M60GD",
-                Preco = 649.90m,
-                QuantidadeEstoque = 12,
-                Ativa = true
-            });
+        builder.HasData(InitialData);
     }
+
+    private sealed record PecaSeed(
+        int Id,
+        string Nome,
+        string Marca,
+        string Modelo,
+        decimal Preco,
+        int QuantidadeEstoque,
+        bool Ativa);
 }
