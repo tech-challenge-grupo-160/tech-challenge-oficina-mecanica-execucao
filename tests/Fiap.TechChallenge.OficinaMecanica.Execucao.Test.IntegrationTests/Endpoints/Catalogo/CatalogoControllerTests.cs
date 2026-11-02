@@ -40,6 +40,25 @@ public sealed class CatalogoControllerTests : IClassFixture<CustomWebApplication
     }
 
     [Fact]
+    public async Task Consultar_DeveDisponibilizarCatalogoInicialCompleto()
+    {
+        var ids = Enumerable.Range(1000, 8).ToArray();
+
+        var response = await _client.PostAsJsonAsync("/api/v1/catalogo/itens/consultar", new
+        {
+            servicoIds = ids,
+            pecaIds = ids
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        json.RootElement.GetProperty("servicos").GetArrayLength().Should().Be(8);
+        json.RootElement.GetProperty("pecas").GetArrayLength().Should().Be(8);
+        json.RootElement.GetProperty("servicoIdsNaoEncontrados").GetArrayLength().Should().Be(0);
+        json.RootElement.GetProperty("pecaIdsNaoEncontrados").GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
     public async Task Consultar_DeveInformarIdsNaoEncontrados()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/catalogo/itens/consultar", new

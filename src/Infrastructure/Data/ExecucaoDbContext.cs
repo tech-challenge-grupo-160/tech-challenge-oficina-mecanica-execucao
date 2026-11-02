@@ -9,6 +9,8 @@ public sealed class ExecucaoDbContext(DbContextOptions<ExecucaoDbContext> option
     public DbSet<Servico> Servicos => Set<Servico>();
     public DbSet<Peca> Pecas => Set<Peca>();
     public DbSet<Diagnostico> Diagnosticos => Set<Diagnostico>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

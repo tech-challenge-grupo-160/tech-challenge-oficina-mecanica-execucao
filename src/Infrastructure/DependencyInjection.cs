@@ -1,6 +1,9 @@
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Application.Abstractions;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Data;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Repositories;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Messaging;
+using Amazon.SimpleNotificationService;
+using Amazon.SQS;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +24,16 @@ public static class DependencyInjection
         services.AddDbContext<ExecucaoDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IDiagnosticoRepository, DiagnosticoRepository>();
+        var messagingOptions = configuration
+            .GetSection(MessagingOptions.SectionName)
+            .Get<MessagingOptions>() ?? new MessagingOptions();
+        services.Configure<MessagingOptions>(
+            configuration.GetSection(MessagingOptions.SectionName));
+        services.AddSingleton<IAmazonSQS>(_ => AwsMessagingClientFactory.CreateSqs(messagingOptions));
+        services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
+            AwsMessagingClientFactory.CreateSns(messagingOptions));
+        services.AddHostedService<InicioDiagnosticoConsumerWorker>();
+        services.AddHostedService<OutboxSnsPublisherWorker>();
         services
             .AddHealthChecks()
             .AddDbContextCheck<ExecucaoDbContext>(

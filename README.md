@@ -14,13 +14,13 @@ Faz parte da divisão definida na [ADR-0003](https://github.com/tech-challenge-g
 | Billing | [tech-challenge-oficina-mecanica-billing](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-billing) |
 | Execução | [tech-challenge-oficina-mecanica-execucao](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-execucao) |
 
-> **Estado:** catálogo próprio e abertura idempotente do diagnóstico implementados. Itens diagnosticados, reparo e mensageria entram nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
+> **Estado:** catálogo próprio, início assíncrono e idempotente do diagnóstico via SQS, publicação de evento via SNS e registro do resultado técnico implementados. Conclusão e reparo entram nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
 
 ## Stack
 
 .NET 10 · ASP.NET Core · Clean Architecture (API → Application → Domain → Infrastructure) · MediatR com `ValidationBehavior` · FluentValidation · logs em JSON · Datadog .NET Tracer na imagem.
 
-Banco: PostgreSQL em instância RDS própria, provisionado pela [F4-12](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/issues/143).
+Banco: PostgreSQL em instância RDS própria, provisionado pela [F4-12](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/issues/143). A integração assíncrona usa SNS/SQS, Outbox e Inbox; no Docker local, esses recursos são fornecidos pelo LocalStack do OS Service.
 
 ## Estrutura
 
@@ -69,6 +69,19 @@ A API sobe em `http://localhost:8082`, com Swagger em `/swagger` no ambiente de 
 O PostgreSQL da Execucao fica exposto em `localhost:5433` e usa o database `oficina_execucao`. As migrations e o seed inicial sao aplicados na inicializacao da API.
 
 O endpoint interno `POST /api/v1/catalogo/itens/consultar` fornece snapshots comerciais ao OS Service sem expor estoque. Consulte [os contratos internos](docs/API_CONTRACTS.md).
+
+O seed inicial disponibiliza IDs estaveis de `1000` a `1007`:
+
+| ID | Servico | ID | Peca |
+|---:|---|---:|---|
+| 1000 | Alinhamento | 1000 | Pastilha de Freio |
+| 1001 | Troca de Oleo | 1001 | Oleo de Motor 5W30 - 5L |
+| 1002 | Balanceamento | 1002 | Filtro de Oleo |
+| 1003 | Revisao do Sistema de Freios | 1003 | Disco de Freio |
+| 1004 | Diagnostico Eletronico | 1004 | Correia Dentada |
+| 1005 | Troca da Correia Dentada | 1005 | Vela de Ignicao |
+| 1006 | Higienizacao do Ar-Condicionado | 1006 | Filtro de Ar-Condicionado |
+| 1007 | Revisao Preventiva | 1007 | Bateria 60Ah |
 
 ## Testes
 

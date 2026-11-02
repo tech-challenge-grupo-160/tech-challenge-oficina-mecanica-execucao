@@ -11,4 +11,12 @@ public interface IDiagnosticoRepository
     Task<Diagnostico?> ObterPorOrdemServicoIdAsync(
         int ordemServicoId,
         CancellationToken cancellationToken);
+
+    Task<Diagnostico?> ObterParaAtualizacaoPorOrdemServicoIdAsync(
+        int ordemServicoId,
+        CancellationToken cancellationToken);
+
+    Task AtualizarAsync(
+        Diagnostico diagnostico,
+        CancellationToken cancellationToken);
 }

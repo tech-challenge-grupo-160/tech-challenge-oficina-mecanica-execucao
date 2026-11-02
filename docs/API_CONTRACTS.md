@@ -45,6 +45,16 @@ O endpoint nao reserva pecas, nao valida disponibilidade e nao baixa estoque. Es
 
 ## Iniciar diagnostico
 
+Em produção, o início é um comando assíncrono enviado pelo OS Service à fila SQS
+`execucao-iniciar-diagnostico`. O contrato versionado contém `messageId`,
+`correlationId`, `ordemServicoId`, `veiculoId`, descrição e IDs solicitados. A
+Execução registra a mensagem na Inbox, cria o diagnóstico e persiste o evento
+`DiagnosticoIniciado` na Outbox na mesma transação. O evento é publicado no SNS
+`oficina-eventos`; cada fila possui DLQ com três tentativas.
+
+O endpoint abaixo permanece somente como apoio em `Development` e
+`IntegrationTesting`; não é exposto em produção.
+
 `POST /api/v1/diagnosticos`
 
 O cabecalho `Idempotency-Key` e obrigatorio. O OS Service usa a chave estavel
@@ -83,3 +93,59 @@ Response:
 
 O diagnostico pode ser consultado por
 `GET /api/v1/diagnosticos/ordem-servico/{ordemServicoId}`.
+
+## Registrar resultado tecnico
+
+`PUT /api/v1/diagnosticos/ordem-servico/{ordemServicoId}/resultado`
+
+Registra a representacao atual do resultado tecnico sem concluir o diagnostico.
+O status permanece `EmDiagnostico` e nenhuma operacao e realizada no OS Service
+ou no Billing.
+
+Request:
+
+```json
+{
+  "parecerTecnico": "Pastilhas desgastadas e veiculo desalinhado.",
+  "servicoIds": [1000],
+  "pecas": [
+    {
+      "pecaId": 1000,
+      "quantidade": 2
+    }
+  ]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "diagnosticoId": 1,
+  "ordemServicoId": 3001,
+  "parecerTecnico": "Pastilhas desgastadas e veiculo desalinhado.",
+  "servicoIds": [1000],
+  "pecas": [
+    {
+      "pecaId": 1000,
+      "quantidade": 2
+    }
+  ],
+  "atualizadoEm": "2026-11-01T22:00:00Z",
+  "versao": 1
+}
+```
+
+O `PUT` e idempotente: repetir o mesmo conteudo preserva `atualizadoEm` e
+`versao`. Alterar o conteudo substitui o resultado anterior e incrementa a
+versao. Atualizacoes concorrentes conflitantes retornam `409 Conflict`.
+
+Servicos e pecas inexistentes ou inativos retornam `404 Not Found`. O resultado
+exige ao menos um servico, enquanto a lista de pecas pode ser vazia.
+
+## Consultar resultado tecnico
+
+`GET /api/v1/diagnosticos/ordem-servico/{ordemServicoId}/resultado`
+
+Retorna `200 OK` com o contrato acima. Retorna `404 Not Found` quando o
+diagnostico nao existe ou ainda nao possui resultado registrado.

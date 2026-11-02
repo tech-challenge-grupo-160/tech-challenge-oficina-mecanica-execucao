@@ -29,7 +29,26 @@ public sealed class DiagnosticoConfiguration : IEntityTypeConfiguration<Diagnost
             .HasMaxLength(50)
             .IsRequired();
         builder.Property(diagnostico => diagnostico.IniciadoEm).IsRequired();
+        builder.Property(diagnostico => diagnostico.ParecerTecnico).HasMaxLength(2000);
+        builder.Property(diagnostico => diagnostico.ResultadoAtualizadoEm);
+        builder.Property(diagnostico => diagnostico.Versao)
+            .IsRequired()
+            .IsConcurrencyToken();
         builder.HasIndex(diagnostico => diagnostico.OrdemServicoId).IsUnique();
         builder.HasIndex(diagnostico => diagnostico.ChaveIdempotencia).IsUnique();
+
+        builder.HasMany(diagnostico => diagnostico.ServicosResultado)
+            .WithOne()
+            .HasForeignKey(item => item.DiagnosticoId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(diagnostico => diagnostico.PecasResultado)
+            .WithOne()
+            .HasForeignKey(item => item.DiagnosticoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(diagnostico => diagnostico.ServicosResultado)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(diagnostico => diagnostico.PecasResultado)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

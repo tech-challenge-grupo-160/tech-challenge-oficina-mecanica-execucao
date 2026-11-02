@@ -40,9 +40,38 @@ public sealed class DiagnosticoRepository(ExecucaoDbContext context) : IDiagnost
         CancellationToken cancellationToken) =>
         context.Diagnosticos
             .AsNoTracking()
+            .AsSplitQuery()
+            .Include(diagnostico => diagnostico.ServicosResultado)
+            .Include(diagnostico => diagnostico.PecasResultado)
             .FirstOrDefaultAsync(
                 diagnostico => diagnostico.OrdemServicoId == ordemServicoId,
                 cancellationToken);
+
+    public Task<Diagnostico?> ObterParaAtualizacaoPorOrdemServicoIdAsync(
+        int ordemServicoId,
+        CancellationToken cancellationToken) =>
+        context.Diagnosticos
+            .AsSplitQuery()
+            .Include(diagnostico => diagnostico.ServicosResultado)
+            .Include(diagnostico => diagnostico.PecasResultado)
+            .FirstOrDefaultAsync(
+                diagnostico => diagnostico.OrdemServicoId == ordemServicoId,
+                cancellationToken);
+
+    public async Task AtualizarAsync(
+        Diagnostico diagnostico,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ServiceConflictException(
+                "O resultado do diagnostico foi alterado por outra requisicao. Consulte-o e tente novamente.");
+        }
+    }
 
     private async Task<Diagnostico?> ObterExistenteAsync(
         Diagnostico diagnostico,
@@ -52,6 +81,7 @@ public sealed class DiagnosticoRepository(ExecucaoDbContext context) : IDiagnost
             .AsNoTracking()
             .Where(item => item.OrdemServicoId == diagnostico.OrdemServicoId ||
                            item.ChaveIdempotencia == diagnostico.ChaveIdempotencia)
+            .OrderBy(item => item.Id)
             .Take(2)
             .ToListAsync(cancellationToken);
 

@@ -41,4 +41,61 @@ public sealed class DiagnosticoDomainTests
 
         primeiro.CorrespondeA(repetido).Should().BeTrue();
     }
+
+    [Fact]
+    public void RegistrarResultado_DeveManterDiagnosticoEmAndamentoEArmazenarItens()
+    {
+        var diagnostico = CriarDiagnostico();
+        var atualizadoEm = new DateTimeOffset(2026, 11, 1, 22, 0, 0, TimeSpan.Zero);
+
+        var alterado = diagnostico.RegistrarResultado(
+            " Pastilhas desgastadas e veiculo desalinhado. ",
+            [1001, 1000],
+            [(2000, 2)],
+            atualizadoEm);
+
+        alterado.Should().BeTrue();
+        diagnostico.Status.Should().Be("EmDiagnostico");
+        diagnostico.ParecerTecnico.Should().Be("Pastilhas desgastadas e veiculo desalinhado.");
+        diagnostico.ServicosResultado.Select(item => item.ServicoId).Should().Equal(1000, 1001);
+        diagnostico.PecasResultado.Should().ContainSingle()
+            .Which.Should().BeEquivalentTo(new { PecaId = 2000, Quantidade = 2 });
+        diagnostico.ResultadoAtualizadoEm.Should().Be(atualizadoEm);
+        diagnostico.Versao.Should().Be(1);
+    }
+
+    [Fact]
+    public void RegistrarResultado_DeveSerIdempotenteParaMesmoConteudo()
+    {
+        var diagnostico = CriarDiagnostico();
+        var primeiraData = new DateTimeOffset(2026, 11, 1, 22, 0, 0, TimeSpan.Zero);
+        diagnostico.RegistrarResultado("Parecer", [1000], [(2000, 2)], primeiraData);
+
+        var alterado = diagnostico.RegistrarResultado(
+            "Parecer", [1000], [(2000, 2)], primeiraData.AddMinutes(1));
+
+        alterado.Should().BeFalse();
+        diagnostico.ResultadoAtualizadoEm.Should().Be(primeiraData);
+        diagnostico.Versao.Should().Be(1);
+    }
+
+    [Fact]
+    public void RegistrarResultado_DeveRejeitarServicoDuplicado()
+    {
+        var diagnostico = CriarDiagnostico();
+
+        var action = () => diagnostico.RegistrarResultado(
+            "Parecer", [1000, 1000], [], DateTimeOffset.UtcNow);
+
+        action.Should().Throw<ArgumentException>();
+    }
+
+    private static Diagnostico CriarDiagnostico() => Diagnostico.Iniciar(
+        3001,
+        1001,
+        "Ruido",
+        [1000],
+        [2000],
+        "iniciar-diagnostico:3001",
+        DateTimeOffset.UtcNow);
 }
