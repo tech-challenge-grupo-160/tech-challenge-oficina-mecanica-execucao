@@ -13,6 +13,7 @@ public sealed class ExecucaoDbContext(DbContextOptions<ExecucaoDbContext> option
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
     public DbSet<ReservaEstoque> ReservasEstoque => Set<ReservaEstoque>();
     public DbSet<ReservaEstoqueItem> ReservasEstoqueItens => Set<ReservaEstoqueItem>();
+    public DbSet<ExecucaoReparo> ExecucoesReparo => Set<ExecucaoReparo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
