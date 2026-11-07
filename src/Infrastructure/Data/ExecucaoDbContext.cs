@@ -11,6 +11,8 @@ public sealed class ExecucaoDbContext(DbContextOptions<ExecucaoDbContext> option
     public DbSet<Diagnostico> Diagnosticos => Set<Diagnostico>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+    public DbSet<ReservaEstoque> ReservasEstoque => Set<ReservaEstoque>();
+    public DbSet<ReservaEstoqueItem> ReservasEstoqueItens => Set<ReservaEstoqueItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

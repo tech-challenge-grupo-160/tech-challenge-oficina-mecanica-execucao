@@ -310,6 +310,56 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.ReservaEstoque", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CriadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventoResultadoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("OrdemServicoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdemServicoId")
+                        .IsUnique();
+
+                    b.ToTable("ReservaEstoque", (string)null);
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.ReservaEstoqueItem", b =>
+                {
+                    b.Property<Guid>("ReservaEstoqueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PecaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuantidadeReservada")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuantidadeSolicitada")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ReservaEstoqueId", "PecaId");
+
+                    b.ToTable("ReservaEstoqueItem", (string)null);
+                });
+
             modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.Servico", b =>
                 {
                     b.Property<int>("Id")
@@ -438,11 +488,25 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.ReservaEstoqueItem", b =>
+                {
+                    b.HasOne("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.ReservaEstoque", null)
+                        .WithMany("Itens")
+                        .HasForeignKey("ReservaEstoqueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.Diagnostico", b =>
                 {
                     b.Navigation("PecasResultado");
 
                     b.Navigation("ServicosResultado");
+                });
+
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.ReservaEstoque", b =>
+                {
+                    b.Navigation("Itens");
                 });
 #pragma warning restore 612, 618
         }
