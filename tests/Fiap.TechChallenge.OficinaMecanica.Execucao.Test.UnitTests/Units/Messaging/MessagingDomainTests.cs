@@ -165,4 +165,30 @@ public class MessagingDomainTests
         options.ReservaPecasQueueUrl.Should().EndWith("execucao-reservar-pecas");
         new MessagingOptions().ReservaPecasQueueUrl.Should().BeEmpty();
     }
+
+    [Fact]
+    public void ContratosDeExecucao_DevemPreservarIdentidadeEEstado()
+    {
+        var correlationId = Guid.NewGuid();
+        var orcamentoId = Guid.NewGuid();
+        var agora = DateTimeOffset.UtcNow;
+        IMensagemIntegracao iniciar = new IniciarExecucaoMessage(
+            Guid.NewGuid(), correlationId, agora, 3007, 1, orcamentoId);
+        var finalizada = new ExecucaoFinalizadaMessage(
+            Guid.NewGuid(), correlationId, agora, 3007, 1, orcamentoId,
+            "Finalizada", agora);
+        var options = new MessagingOptions
+        {
+            InicioExecucaoQueueUrl = "http://localhost:4566/execucao-iniciar-reparo"
+        };
+
+        iniciar.CorrelationId.Should().Be(correlationId);
+        iniciar.Versao.Should().Be(1);
+        iniciar.Should().BeOfType<IniciarExecucaoMessage>().Which.OrdemServicoId.Should().Be(3007);
+        finalizada.OrcamentoId.Should().Be(orcamentoId);
+        finalizada.Status.Should().Be("Finalizada");
+        finalizada.FinalizadaEm.Should().Be(agora);
+        finalizada.Versao.Should().Be(1);
+        options.InicioExecucaoQueueUrl.Should().EndWith("execucao-iniciar-reparo");
+    }
 }

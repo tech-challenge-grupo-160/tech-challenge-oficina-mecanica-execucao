@@ -9,5 +9,6 @@ public sealed class MessagingOptions
     public string? ServiceUrl { get; init; }
     public string InicioDiagnosticoQueueUrl { get; init; } = string.Empty;
     public string ReservaPecasQueueUrl { get; init; } = string.Empty;
+    public string InicioExecucaoQueueUrl { get; init; } = string.Empty;
     public string EventosTopicArn { get; init; } = string.Empty;
 }

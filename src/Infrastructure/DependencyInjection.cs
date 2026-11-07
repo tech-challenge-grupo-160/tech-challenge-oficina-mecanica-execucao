@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IDiagnosticoRepository, DiagnosticoRepository>();
         services.AddScoped<IReservaEstoqueRepository, ReservaEstoqueRepository>();
+        services.AddScoped<IExecucaoReparoRepository, ExecucaoReparoRepository>();
         var messagingOptions = configuration
             .GetSection(MessagingOptions.SectionName)
             .Get<MessagingOptions>() ?? new MessagingOptions();
@@ -35,6 +36,7 @@ public static class DependencyInjection
             AwsMessagingClientFactory.CreateSns(messagingOptions));
         services.AddHostedService<InicioDiagnosticoConsumerWorker>();
         services.AddHostedService<ReservaPecasConsumerWorker>();
+        services.AddHostedService<InicioExecucaoConsumerWorker>();
         services.AddHostedService<OutboxSnsPublisherWorker>();
         services
             .AddHealthChecks()

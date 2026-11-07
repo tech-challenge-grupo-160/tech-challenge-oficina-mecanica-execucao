@@ -119,6 +119,48 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                     b.ToTable("DiagnosticoServicoResultado", (string)null);
                 });
 
+            modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.ExecucaoReparo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DiagnosticoId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("EventoFinalizacaoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("FinalizadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("IniciadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrcamentoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("OrdemServicoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("OrdemServicoId")
+                        .IsUnique();
+
+                    b.ToTable("ExecucaoReparo", (string)null);
+                });
+
             modelBuilder.Entity("Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities.InboxMessage", b =>
                 {
                     b.Property<Guid>("MessageId")
