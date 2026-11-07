@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddDbContext<ExecucaoDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IDiagnosticoRepository, DiagnosticoRepository>();
+        services.AddScoped<IReservaEstoqueRepository, ReservaEstoqueRepository>();
         var messagingOptions = configuration
             .GetSection(MessagingOptions.SectionName)
             .Get<MessagingOptions>() ?? new MessagingOptions();
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
             AwsMessagingClientFactory.CreateSns(messagingOptions));
         services.AddHostedService<InicioDiagnosticoConsumerWorker>();
+        services.AddHostedService<ReservaPecasConsumerWorker>();
         services.AddHostedService<OutboxSnsPublisherWorker>();
         services
             .AddHealthChecks()

@@ -37,6 +37,7 @@ services:
       AWS_ACCESS_KEY_ID: ${LOCALSTACK_ACCESS_KEY_ID:?Defina LOCALSTACK_ACCESS_KEY_ID no arquivo .env}
       AWS_SECRET_ACCESS_KEY: ${LOCALSTACK_SECRET_ACCESS_KEY:?Defina LOCALSTACK_SECRET_ACCESS_KEY no arquivo .env}
       Messaging__InicioDiagnosticoQueueUrl: http://host.docker.internal:4566/000000000000/execucao-iniciar-diagnostico
+      Messaging__ReservaPecasQueueUrl: http://host.docker.internal:4566/000000000000/execucao-reservar-pecas
       Messaging__EventosTopicArn: arn:aws:sns:us-east-1:000000000000:oficina-eventos
     ports:
       - "${API_PORT:-8082}:8080"

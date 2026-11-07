@@ -1,5 +1,12 @@
 namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Application.Messaging;
 
+public interface IMensagemIntegracao
+{
+    Guid MessageId { get; }
+    Guid CorrelationId { get; }
+    int Versao { get; }
+}
+
 public sealed record IniciarDiagnosticoMessage(
     Guid MessageId,
     Guid CorrelationId,
@@ -9,7 +16,7 @@ public sealed record IniciarDiagnosticoMessage(
     string DescricaoSolicitacao,
     IReadOnlyCollection<int> ServicoIdsSolicitados,
     IReadOnlyCollection<int> PecaIdsSolicitadas,
-    int Versao = 1);
+    int Versao = 1) : IMensagemIntegracao;
 
 public sealed record DiagnosticoIniciadoMessage(
     Guid MessageId,
@@ -45,3 +52,38 @@ public sealed record PecaDiagnosticoConcluidoMessage(
     string Nome,
     int Quantidade,
     decimal Preco);
+
+public sealed record ReservarPecasMessage(
+    Guid MessageId,
+    Guid CorrelationId,
+    DateTimeOffset OcorridoEm,
+    int OrdemServicoId,
+    Guid OrcamentoId,
+    IReadOnlyCollection<PecaReservarMessage> Pecas,
+    int Versao = 1) : IMensagemIntegracao;
+
+public sealed record PecaReservarMessage(int PecaId, int Quantidade);
+
+public sealed record PecasReservadasMessage(
+    Guid MessageId,
+    Guid CorrelationId,
+    DateTimeOffset OcorridoEm,
+    int OrdemServicoId,
+    Guid OrcamentoId,
+    IReadOnlyCollection<PecaReservaResultadoMessage> Pecas,
+    int Versao = 1);
+
+public sealed record EstoqueInsuficienteMessage(
+    Guid MessageId,
+    Guid CorrelationId,
+    DateTimeOffset OcorridoEm,
+    int OrdemServicoId,
+    Guid OrcamentoId,
+    IReadOnlyCollection<PecaReservaResultadoMessage> Pecas,
+    int Versao = 1);
+
+public sealed record PecaReservaResultadoMessage(
+    int PecaId,
+    int QuantidadeSolicitada,
+    int QuantidadeReservada,
+    int QuantidadeFaltante);

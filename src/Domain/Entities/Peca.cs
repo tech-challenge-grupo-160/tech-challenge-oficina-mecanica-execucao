@@ -36,4 +36,16 @@ public sealed class Peca
             Ativa = true
         };
     }
+
+    public int ReservarSeDisponivel(int quantidadeSolicitada)
+    {
+        if (quantidadeSolicitada <= 0)
+            throw new ArgumentException("Quantidade solicitada deve ser maior que zero.", nameof(quantidadeSolicitada));
+
+        if (QuantidadeEstoque < quantidadeSolicitada)
+            return 0;
+
+        QuantidadeEstoque -= quantidadeSolicitada;
+        return quantidadeSolicitada;
+    }
 }

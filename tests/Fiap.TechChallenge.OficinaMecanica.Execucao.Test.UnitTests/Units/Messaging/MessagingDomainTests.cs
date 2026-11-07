@@ -1,5 +1,6 @@
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Application.Messaging;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Messaging;
 using FluentAssertions;
 
 namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Test.UnitTests.Units.Messaging;
@@ -96,5 +97,72 @@ public class MessagingDomainTests
         iniciado.CorrelationId.Should().Be(correlationId);
         iniciado.Status.Should().Be("EmDiagnostico");
         iniciado.Versao.Should().Be(1);
+    }
+
+    [Fact]
+    public void ContratosDeReserva_DevemPreservarVersaoCorrelacaoEItens()
+    {
+        var correlationId = Guid.NewGuid();
+        var orcamentoId = Guid.NewGuid();
+        var ocorridoEm = DateTimeOffset.UtcNow;
+        IMensagemIntegracao reservar = new ReservarPecasMessage(
+            Guid.NewGuid(),
+            correlationId,
+            ocorridoEm,
+            3007,
+            orcamentoId,
+            [new PecaReservarMessage(1000, 2)]);
+        var reservadas = new PecasReservadasMessage(
+            Guid.NewGuid(),
+            correlationId,
+            ocorridoEm,
+            3007,
+            orcamentoId,
+            [new PecaReservaResultadoMessage(1000, 2, 2, 0)]);
+        var insuficiente = new EstoqueInsuficienteMessage(
+            Guid.NewGuid(),
+            correlationId,
+            ocorridoEm,
+            3008,
+            orcamentoId,
+            [new PecaReservaResultadoMessage(1000, 4, 0, 4)]);
+
+        reservar.MessageId.Should().NotBeEmpty();
+        reservar.CorrelationId.Should().Be(correlationId);
+        reservar.Versao.Should().Be(1);
+        var reservarMessage = reservar.Should().BeOfType<ReservarPecasMessage>().Subject;
+        reservarMessage.OrdemServicoId.Should().Be(3007);
+        reservarMessage.OrcamentoId.Should().Be(orcamentoId);
+        reservarMessage.OcorridoEm.Should().Be(ocorridoEm);
+        reservarMessage.Pecas.Should().ContainSingle()
+            .Which.Should().Be(new PecaReservarMessage(1000, 2));
+
+        reservadas.MessageId.Should().NotBeEmpty();
+        reservadas.CorrelationId.Should().Be(correlationId);
+        reservadas.OrdemServicoId.Should().Be(3007);
+        reservadas.OrcamentoId.Should().Be(orcamentoId);
+        reservadas.OcorridoEm.Should().Be(ocorridoEm);
+        reservadas.Versao.Should().Be(1);
+        reservadas.Pecas.Single().QuantidadeReservada.Should().Be(2);
+        reservadas.Pecas.Single().QuantidadeFaltante.Should().Be(0);
+
+        insuficiente.MessageId.Should().NotBeEmpty();
+        insuficiente.CorrelationId.Should().Be(correlationId);
+        insuficiente.OrdemServicoId.Should().Be(3008);
+        insuficiente.OrcamentoId.Should().Be(orcamentoId);
+        insuficiente.OcorridoEm.Should().Be(ocorridoEm);
+        insuficiente.Versao.Should().Be(1);
+        insuficiente.Pecas.Single().PecaId.Should().Be(1000);
+        insuficiente.Pecas.Single().QuantidadeSolicitada.Should().Be(4);
+        insuficiente.Pecas.Single().QuantidadeFaltante.Should().Be(4);
+    }
+
+    [Fact]
+    public void MessagingOptions_DeveExporFilaDeReservaDePecas()
+    {
+        var options = new MessagingOptions { ReservaPecasQueueUrl = "http://localhost:4566/000000000000/execucao-reservar-pecas" };
+
+        options.ReservaPecasQueueUrl.Should().EndWith("execucao-reservar-pecas");
+        new MessagingOptions().ReservaPecasQueueUrl.Should().BeEmpty();
     }
 }
