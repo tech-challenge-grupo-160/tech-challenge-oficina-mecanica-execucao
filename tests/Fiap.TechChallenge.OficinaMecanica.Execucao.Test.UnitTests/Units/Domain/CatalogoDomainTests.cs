@@ -72,6 +72,19 @@ public sealed class CatalogoDomainTests
         peca.QuantidadeEstoque.Should().Be(1);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void ReservarSeDisponivel_DeveRejeitarQuantidadeNaoPositiva(int quantidadeSolicitada)
+    {
+        var peca = Peca.Criar("Pastilha", "Cobreq", "N-1234", 45m, 4);
+
+        var reservar = () => peca.ReservarSeDisponivel(quantidadeSolicitada);
+
+        reservar.Should().Throw<ArgumentException>();
+        peca.QuantidadeEstoque.Should().Be(4);
+    }
+
     [Fact]
     public void ReservaEstoque_DeveIdentificarReservaCompletaEParcial()
     {
@@ -109,7 +122,11 @@ public sealed class CatalogoDomainTests
             [ReservaEstoqueItem.Criar(1000, 1, 0), ReservaEstoqueItem.Criar(1000, 2, 0)],
             DateTimeOffset.UtcNow);
 
+        var criarSemOrdemServico = () => ReservaEstoque.Criar(
+            correlationId, 0, [ReservaEstoqueItem.Criar(1000, 1, 0)], DateTimeOffset.UtcNow);
+
         criarSemCorrelationId.Should().Throw<ArgumentException>();
+        criarSemOrdemServico.Should().Throw<ArgumentException>();
         criarSemItens.Should().Throw<ArgumentException>();
         criarComItemRepetido.Should().Throw<ArgumentException>();
     }

@@ -34,6 +34,9 @@ public sealed class ReservaEstoqueRepositoryTests(CustomWebApplicationFactory fa
         primeira.Itens.Single().QuantidadeFaltante.Should().Be(solicitada);
         segunda.Id.Should().Be(primeira.Id);
         peca.QuantidadeEstoque.Should().Be(estoqueInicial);
+        primeira.Itens.Single().ReservaEstoqueId.Should().Be(primeira.Id);
+        (await context.ReservasEstoqueItens.CountAsync(item => item.ReservaEstoqueId == primeira.Id))
+            .Should().Be(1);
         await transaction.RollbackAsync();
     }
 }
