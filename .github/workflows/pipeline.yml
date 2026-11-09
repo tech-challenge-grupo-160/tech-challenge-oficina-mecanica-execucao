@@ -36,8 +36,10 @@ jobs:
       # (infra/messaging.tf); o codigo passa a le-las no ajuste combinado em
       # 08/11 (uma fila de comandos, roteada pelo campo type). Ate la, as
       # chaves chegam ao pod sem efeito e Messaging__Enabled segue false.
-      # DynamoDB/RDS entram quando a F4-13/F4-12 existirem.
+      # A connection string vem do RDS proprio da Execucao (F4-12), criado no
+      # tech-challenge-infra-database; o OS Service nao recebe este segredo.
       segredos: |
+        ConnectionStrings__DefaultConnection=tc-grupo160/{sufixo}/execucao/banco#connectionString
         Messaging__EventTopicArn=tc-grupo160/{sufixo}/execucao/messaging#Messaging__EventTopicArn
         Messaging__CommandsQueueUrl=tc-grupo160/{sufixo}/execucao/messaging#Messaging__CommandsQueueUrl
         Messaging__OsEventsQueueUrl=tc-grupo160/{sufixo}/execucao/messaging#Messaging__OsEventsQueueUrl
