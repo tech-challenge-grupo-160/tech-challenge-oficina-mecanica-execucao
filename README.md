@@ -16,6 +16,11 @@ Faz parte da divisão definida na [ADR-0003](https://github.com/tech-challenge-g
 
 > **Estado:** catálogo próprio e jornada de diagnóstico implementados. O início chega por SQS; resultado e conclusão pertencem à Execução; os eventos de início e conclusão são publicados via SNS usando Outbox/Inbox e idempotência. Reparo entra nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
 
+> **Atualizacao da jornada:** catalogo, diagnostico, reserva e reposicao de
+> estoque e reparo estao implementados. A reposicao atende reservas pendentes
+> em FIFO e libera a continuidade da execucao de forma assincrona via Outbox,
+> SNS e SQS.
+
 ## Stack
 
 .NET 10 · ASP.NET Core · Clean Architecture (API → Application → Domain → Infrastructure) · MediatR com `ValidationBehavior` · FluentValidation · logs em JSON · Datadog .NET Tracer na imagem.
@@ -74,6 +79,11 @@ A API sobe em `http://localhost:8082`, com Swagger em `/swagger` no ambiente de 
 O PostgreSQL da Execucao fica exposto em `localhost:5433` e usa o database `oficina_execucao`. As migrations e o seed inicial sao aplicados na inicializacao da API.
 
 O endpoint interno `POST /api/v1/catalogo/itens/consultar` fornece snapshots comerciais ao OS Service sem expor estoque. Consulte [os contratos internos](docs/API_CONTRACTS.md).
+
+O endpoint `POST /api/v1/estoque/pecas/{pecaId}/reposicoes` registra uma entrada
+de estoque. Reservas pendentes sao reprocessadas em FIFO na mesma transacao; as
+OSs totalmente atendidas sao liberadas por `PecasReservadasMessage`, publicado
+pela Outbox no SNS. Consulte [os contratos internos](docs/API_CONTRACTS.md).
 
 O seed inicial disponibiliza IDs estaveis de `1000` a `1007`:
 

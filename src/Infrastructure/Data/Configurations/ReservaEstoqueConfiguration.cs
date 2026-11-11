@@ -11,6 +11,7 @@ public sealed class ReservaEstoqueConfiguration : IEntityTypeConfiguration<Reser
         builder.ToTable("ReservaEstoque");
         builder.HasKey(item => item.Id);
         builder.Property(item => item.Status).HasMaxLength(30).IsRequired();
+        builder.Property(item => item.OrcamentoId).IsRequired();
         builder.HasIndex(item => item.OrdemServicoId).IsUnique();
         builder.HasMany(item => item.Itens)
             .WithOne()

@@ -19,14 +19,15 @@ public sealed class ReservaEstoqueRepositoryTests(CustomWebApplicationFactory fa
         var estoqueInicial = peca.QuantidadeEstoque;
         var solicitada = estoqueInicial + 2;
         var correlationId = Guid.NewGuid();
+        var orcamentoId = Guid.NewGuid();
         var repository = new ReservaEstoqueRepository(context);
 
         var primeira = await repository.ReservarAsync(
-            correlationId, 99001, [(1000, solicitada)],
+            correlationId, 99001, orcamentoId, [(1000, solicitada)],
             DateTimeOffset.UtcNow, CancellationToken.None);
         await context.SaveChangesAsync();
         var segunda = await repository.ReservarAsync(
-            correlationId, 99001, [(1000, solicitada)],
+            correlationId, 99001, orcamentoId, [(1000, solicitada)],
             DateTimeOffset.UtcNow, CancellationToken.None);
 
         primeira.Status.Should().Be("EstoqueInsuficiente");

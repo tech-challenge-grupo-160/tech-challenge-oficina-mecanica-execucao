@@ -5,6 +5,7 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Application.Estoque;
 public sealed record ReservarPecasCommand(
     Guid CorrelationId,
     int OrdemServicoId,
+    Guid OrcamentoId,
     IReadOnlyCollection<PecaReservaCommand> Pecas)
     : IRequest<ReservaEstoqueResult>;
 

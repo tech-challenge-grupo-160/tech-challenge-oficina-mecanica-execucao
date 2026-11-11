@@ -8,6 +8,7 @@ public sealed class ReservarPecasCommandValidator : AbstractValidator<ReservarPe
     {
         RuleFor(command => command.CorrelationId).NotEmpty();
         RuleFor(command => command.OrdemServicoId).GreaterThan(0);
+        RuleFor(command => command.OrcamentoId).NotEmpty();
         RuleFor(command => command.Pecas).NotEmpty();
         RuleFor(command => command.Pecas)
             .Must(pecas => pecas.Select(item => item.PecaId).Distinct().Count() == pecas.Count)

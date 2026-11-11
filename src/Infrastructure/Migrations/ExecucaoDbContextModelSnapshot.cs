@@ -367,6 +367,9 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                     b.Property<Guid>("EventoResultadoId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("OrcamentoId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("OrdemServicoId")
                         .HasColumnType("integer");
 

@@ -72,6 +72,18 @@ public sealed class CatalogoDomainTests
         peca.QuantidadeEstoque.Should().Be(1);
     }
 
+    [Fact]
+    public void Repor_DeveSomarAoEstoqueERejeitarQuantidadeInvalida()
+    {
+        var peca = Peca.Criar("Pastilha", "Cobreq", "N-1234", 45m, 2);
+
+        peca.Repor(3);
+        var reporZero = () => peca.Repor(0);
+
+        peca.QuantidadeEstoque.Should().Be(5);
+        reporZero.Should().Throw<ArgumentException>();
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -89,10 +101,10 @@ public sealed class CatalogoDomainTests
     public void ReservaEstoque_DeveIdentificarReservaCompletaEParcial()
     {
         var completa = ReservaEstoque.Criar(
-            Guid.NewGuid(), 3007,
+            Guid.NewGuid(), 3007, Guid.NewGuid(),
             [ReservaEstoqueItem.Criar(1000, 2, 2)], DateTimeOffset.UtcNow);
         var parcial = ReservaEstoque.Criar(
-            Guid.NewGuid(), 3008,
+            Guid.NewGuid(), 3008, Guid.NewGuid(),
             [ReservaEstoqueItem.Criar(1000, 4, 2)], DateTimeOffset.UtcNow);
 
         completa.Status.Should().Be("Reservada");
@@ -105,30 +117,64 @@ public sealed class CatalogoDomainTests
     public void ReservaEstoque_DeveValidarEntradaEReconhecerReprocessamentoCompativel()
     {
         var correlationId = Guid.NewGuid();
+        var orcamentoId = Guid.NewGuid();
         var reserva = ReservaEstoque.Criar(
-            correlationId, 3007,
+            correlationId, 3007, orcamentoId,
             [ReservaEstoqueItem.Criar(1000, 4, 2)], DateTimeOffset.UtcNow);
 
-        reserva.Corresponde(correlationId, [(1000, 4)]).Should().BeTrue();
-        reserva.Corresponde(Guid.NewGuid(), [(1000, 4)]).Should().BeFalse();
-        reserva.Corresponde(correlationId, [(1000, 3)]).Should().BeFalse();
+        reserva.Corresponde(correlationId, orcamentoId, [(1000, 4)]).Should().BeTrue();
+        reserva.Corresponde(Guid.NewGuid(), orcamentoId, [(1000, 4)]).Should().BeFalse();
+        reserva.Corresponde(correlationId, Guid.NewGuid(), [(1000, 4)]).Should().BeFalse();
+        reserva.Corresponde(correlationId, orcamentoId, [(1000, 3)]).Should().BeFalse();
 
         var criarSemCorrelationId = () => ReservaEstoque.Criar(
-            Guid.Empty, 3007, [ReservaEstoqueItem.Criar(1000, 1, 0)], DateTimeOffset.UtcNow);
+            Guid.Empty, 3007, orcamentoId,
+            [ReservaEstoqueItem.Criar(1000, 1, 0)], DateTimeOffset.UtcNow);
+        var criarSemOrcamentoId = () => ReservaEstoque.Criar(
+            correlationId, 3007, Guid.Empty,
+            [ReservaEstoqueItem.Criar(1000, 1, 0)], DateTimeOffset.UtcNow);
         var criarSemItens = () => ReservaEstoque.Criar(
-            correlationId, 3007, [], DateTimeOffset.UtcNow);
+            correlationId, 3007, orcamentoId, [], DateTimeOffset.UtcNow);
         var criarComItemRepetido = () => ReservaEstoque.Criar(
-            correlationId, 3007,
+            correlationId, 3007, orcamentoId,
             [ReservaEstoqueItem.Criar(1000, 1, 0), ReservaEstoqueItem.Criar(1000, 2, 0)],
             DateTimeOffset.UtcNow);
 
         var criarSemOrdemServico = () => ReservaEstoque.Criar(
-            correlationId, 0, [ReservaEstoqueItem.Criar(1000, 1, 0)], DateTimeOffset.UtcNow);
+            correlationId, 0, orcamentoId,
+            [ReservaEstoqueItem.Criar(1000, 1, 0)], DateTimeOffset.UtcNow);
 
         criarSemCorrelationId.Should().Throw<ArgumentException>();
+        criarSemOrcamentoId.Should().Throw<ArgumentException>();
         criarSemOrdemServico.Should().Throw<ArgumentException>();
         criarSemItens.Should().Throw<ArgumentException>();
         criarComItemRepetido.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ReservaEstoque_DeveCompletarSomenteQuandoTodasAsFaltasForemAtendidas()
+    {
+        var reserva = ReservaEstoque.Criar(
+            Guid.NewGuid(), 3007, Guid.NewGuid(),
+            [
+                ReservaEstoqueItem.Criar(1000, 4, 0),
+                ReservaEstoqueItem.Criar(1001, 2, 0)
+            ],
+            DateTimeOffset.UtcNow);
+        var eventoInicial = reserva.EventoResultadoId;
+        var pecaSemSaldo = Peca.Criar("Pastilha", "Cobreq", "N-1234", 45m, 2);
+        var filtro = Peca.Criar("Filtro", "Tecfil", "PSL", 39m, 2);
+
+        reserva.TentarCompletarItem(1000, pecaSemSaldo).Should().BeFalse();
+        pecaSemSaldo.Repor(2);
+        reserva.TentarCompletarItem(1000, pecaSemSaldo).Should().BeTrue();
+        reserva.Status.Should().Be("EstoqueInsuficiente");
+        reserva.TentarCompletarItem(1001, filtro).Should().BeTrue();
+
+        reserva.Status.Should().Be("Reservada");
+        reserva.EventoResultadoId.Should().NotBe(eventoInicial);
+        reserva.Itens.Should().OnlyContain(item => item.QuantidadeFaltante == 0);
+        reserva.TentarCompletarItem(1001, filtro).Should().BeFalse();
     }
 
     [Theory]
