@@ -16,6 +16,7 @@ public sealed class ReservarPecasCommandHandler(IReservaEstoqueRepository reposi
         var reserva = await repository.ReservarAsync(
             request.CorrelationId,
             request.OrdemServicoId,
+            request.OrcamentoId,
             itens,
             DateTimeOffset.UtcNow,
             cancellationToken);

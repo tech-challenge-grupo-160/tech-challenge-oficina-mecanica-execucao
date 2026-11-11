@@ -36,6 +36,7 @@ public sealed class ReservaPecasConsumerWorker(
         var resultado = await mediator.Send(new ReservarPecasCommand(
             comando.CorrelationId,
             comando.OrdemServicoId,
+            comando.OrcamentoId,
             comando.Pecas.Select(item =>
                 new PecaReservaCommand(item.PecaId, item.Quantidade)).ToArray()), cancellationToken);
 

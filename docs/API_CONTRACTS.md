@@ -43,6 +43,44 @@ IDs inexistentes ou inativos aparecem nas listas `servicoIdsNaoEncontrados` e `p
 
 O endpoint nao reserva pecas, nao valida disponibilidade e nao baixa estoque. Essas operacoes pertencem a comandos posteriores da Saga.
 
+## Repor estoque e retomar reservas pendentes
+
+`POST /api/v1/estoque/pecas/{pecaId}/reposicoes`
+
+Registra a entrada de pecas compradas. A Execucao, dona do estoque, reprocessa
+as reservas em `EstoqueInsuficiente` pela ordem de criacao (FIFO). Cada reserva
+debita somente a quantidade ainda faltante e uma OS posterior nao ultrapassa
+uma reserva anterior que ainda nao possa ser atendida.
+
+Request:
+
+```json
+{
+  "quantidade": 100
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "pecaId": 1007,
+  "quantidadeReposta": 100,
+  "quantidadeEstoque": 13,
+  "ordensServicoLiberadas": [3011]
+}
+```
+
+A resposta confirma a persistencia local. A continuidade da Saga e assincrona:
+para cada reserva totalmente atendida, a Execucao grava
+`PecasReservadasMessage` na Outbox; o evento segue por SNS/SQS e o OS Service
+muda a OS de `AguardandoEstoque` para `EmExecucao`. Se a quantidade reposta nao
+for suficiente para completar a reserva mais antiga, ela permanece aguardando
+e nenhum evento de liberacao e publicado.
+
+Peca inexistente ou inativa retorna `404 Not Found`; identificador ou quantidade
+menor ou igual a zero retorna `400 Bad Request`.
+
 ## Iniciar diagnostico
 
 Em produção, o início é um comando assíncrono enviado pelo OS Service à fila SQS

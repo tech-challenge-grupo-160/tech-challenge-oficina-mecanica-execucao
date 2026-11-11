@@ -48,4 +48,12 @@ public sealed class Peca
         QuantidadeEstoque -= quantidadeSolicitada;
         return quantidadeSolicitada;
     }
+
+    public void Repor(int quantidade)
+    {
+        if (quantidade <= 0)
+            throw new ArgumentException("Quantidade reposta deve ser maior que zero.", nameof(quantidade));
+
+        QuantidadeEstoque = checked(QuantidadeEstoque + quantidade);
+    }
 }
