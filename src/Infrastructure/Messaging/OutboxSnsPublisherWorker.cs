@@ -1,6 +1,8 @@
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Data;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Logging;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Shared.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -51,6 +53,11 @@ public sealed class OutboxSnsPublisherWorker(
 
         foreach (var mensagem in mensagens)
         {
+            using var contexto = logger.Iniciar(
+                mensagem.CorrelationId,
+                OutboxLogContexto.LerOrdemServicoId(mensagem.Payload),
+                mensagem.Id,
+                mensagem.Tipo);
             try
             {
                 await sns.PublishAsync(new PublishRequest
@@ -63,6 +70,7 @@ public sealed class OutboxSnsPublisherWorker(
                     }
                 }, cancellationToken);
                 mensagem.MarcarPublicada(DateTimeOffset.UtcNow);
+                logger.LogInformation("Evento {TipoMensagem} publicado.", mensagem.Tipo);
             }
             catch (Exception exception)
             {
