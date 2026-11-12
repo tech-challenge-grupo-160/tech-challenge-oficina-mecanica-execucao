@@ -17,23 +17,40 @@ locals {
     service => "arn:${data.aws_partition.current.partition}:sns:${var.region}:${data.aws_caller_identity.current.account_id}:${name}"
   }
 
+  # Uma fila por comando, cada uma com DLQ propria (adendo de 11/11 a
+  # ADR-0005). E a topologia que o codigo le e que o LocalStack monta
+  # (docker/localstack do OS Service): cada consumidor tem sua fila, sem
+  # roteamento pelo campo type. config_key e o nome que o codigo le em
+  # Messaging__<config_key>.
+  #
+  # Comandos chegam por envio direto do OS Service (SendMessage), sem topico:
+  # producer = null, entao nao ha assinatura nem queue policy para o SNS. O OS
+  # Service monta a URL destas filas pelo nome (infra/messaging.tf de la).
   queues = {
-    os_events = {
-      name     = "${local.prefix}-execucao-os-eventos"
-      producer = "os"
-      message_types = [
-        "os.aberta",
-        "os.cancelada",
-      ]
+    iniciar_diagnostico = {
+      name       = "${local.prefix}-execucao-iniciar-diagnostico"
+      config_key = "InicioDiagnosticoQueueUrl"
+      producer   = null
+      tipo       = null
     }
-    commands = {
-      name          = "${local.prefix}-execucao-comandos"
-      producer      = null
-      message_types = []
+    reservar_pecas = {
+      name       = "${local.prefix}-execucao-reservar-pecas"
+      config_key = "ReservaPecasQueueUrl"
+      producer   = null
+      tipo       = null
+    }
+    iniciar_reparo = {
+      name       = "${local.prefix}-execucao-iniciar-reparo"
+      config_key = "InicioExecucaoQueueUrl"
+      producer   = null
+      tipo       = null
     }
   }
 }
 
+# Topico dos eventos da Execucao (DiagnosticoIniciado, DiagnosticoConcluido,
+# PecasReservadas, EstoqueInsuficiente, ExecucaoFinalizada). O publicador da
+# Outbox grava o tipo no atributo "tipo"; quem filtra sao as filas do OS.
 resource "aws_sns_topic" "events" {
   name              = local.topic_names[local.service]
   kms_master_key_id = "alias/aws/sns"
@@ -60,6 +77,9 @@ resource "aws_sqs_queue" "queue" {
   })
 }
 
+# Vazios aqui (a Execucao so consome comandos), mas mantidos com o mesmo
+# endereco dos outros servicos: o sobe-tudo.sh e o derruba-tudo.sh usam
+# -target=aws_sns_topic_subscription.events nos tres repositorios.
 resource "aws_sqs_queue_policy" "event_delivery" {
   for_each = {
     for key, queue in local.queues : key => queue
@@ -94,9 +114,9 @@ resource "aws_sns_topic_subscription" "events" {
   protocol             = "sqs"
   endpoint             = aws_sqs_queue.queue[each.key].arn
   raw_message_delivery = true
-  filter_policy_scope  = "MessageBody"
+  filter_policy_scope  = "MessageAttributes"
   filter_policy = jsonencode({
-    type = each.value.message_types
+    tipo = [each.value.tipo]
   })
 
   depends_on = [aws_sqs_queue_policy.event_delivery]
@@ -108,18 +128,19 @@ resource "aws_secretsmanager_secret" "messaging_config" {
   recovery_window_in_days = 0
 }
 
+# As chaves sao exatamente as que o codigo le (Messaging__*), para o deploy
+# copiar o segredo para o pod sem traducao. Messaging__Enabled liga os workers:
+# so existe quando a infra existe.
 resource "aws_secretsmanager_secret_version" "messaging_config" {
   secret_id = aws_secretsmanager_secret.messaging_config.id
-  secret_string = jsonencode({
-    Messaging__EventTopicName    = aws_sns_topic.events.name
-    Messaging__EventTopicArn     = aws_sns_topic.events.arn
-    Messaging__OsEventsQueueName = aws_sqs_queue.queue["os_events"].name
-    Messaging__OsEventsQueueUrl  = aws_sqs_queue.queue["os_events"].url
-    Messaging__OsEventsQueueArn  = aws_sqs_queue.queue["os_events"].arn
-    Messaging__OsEventsDlqArn    = aws_sqs_queue.dlq["os_events"].arn
-    Messaging__CommandsQueueName = aws_sqs_queue.queue["commands"].name
-    Messaging__CommandsQueueUrl  = aws_sqs_queue.queue["commands"].url
-    Messaging__CommandsQueueArn  = aws_sqs_queue.queue["commands"].arn
-    Messaging__CommandsDlqArn    = aws_sqs_queue.dlq["commands"].arn
-  })
+  secret_string = jsonencode(merge(
+    {
+      Messaging__Enabled         = "true"
+      Messaging__EventosTopicArn = aws_sns_topic.events.arn
+    },
+    {
+      for key, queue in local.queues :
+      "Messaging__${queue.config_key}" => aws_sqs_queue.queue[key].url
+    }
+  ))
 }
