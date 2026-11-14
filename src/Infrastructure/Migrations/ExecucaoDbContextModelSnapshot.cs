@@ -178,7 +178,13 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("TraceContext")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.HasKey("MessageId");
+
+                    b.HasIndex("CorrelationId");
 
                     b.HasIndex("ProcessadoEm");
 
@@ -216,6 +222,10 @@ namespace Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TraceContext")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<string>("UltimoErro")
                         .HasMaxLength(2000)
