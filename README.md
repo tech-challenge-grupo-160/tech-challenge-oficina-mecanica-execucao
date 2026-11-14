@@ -14,18 +14,95 @@ Faz parte da divisão definida na [ADR-0003](https://github.com/tech-challenge-g
 | Billing | [tech-challenge-oficina-mecanica-billing](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-billing) |
 | Execução | [tech-challenge-oficina-mecanica-execucao](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica-execucao) |
 
-> **Estado:** catálogo próprio e jornada de diagnóstico implementados. O início chega por SQS; resultado e conclusão pertencem à Execução; os eventos de início e conclusão são publicados via SNS usando Outbox/Inbox e idempotência. Reparo entra nas próximas jornadas do [board da Fase 4](https://github.com/orgs/tech-challenge-grupo-160/projects/5).
+Infraestrutura compartilhada: [rede, EKS, API Gateway e ALB](https://github.com/tech-challenge-grupo-160/tech-challenge-infra-k8s),
+[bancos RDS](https://github.com/tech-challenge-grupo-160/tech-challenge-infra-database),
+[Lambda de autenticação](https://github.com/tech-challenge-grupo-160/tech-challenge-lambda-auth) e
+[pipeline reutilizável](https://github.com/tech-challenge-grupo-160/tech-challenge-pipelines).
+Diagramas da arquitetura: [docs/diagrams do OS Service](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/tree/develop/docs/diagrams).
 
-> **Atualizacao da jornada:** catalogo, diagnostico, reserva e reposicao de
-> estoque e reparo estao implementados. A reposicao atende reservas pendentes
-> em FIFO e libera a continuidade da execucao de forma assincrona via Outbox,
-> SNS e SQS.
+## Papel na Saga
+
+A OS é coordenada por uma **Saga orquestrada pelo OS Service**
+([ADR-0004](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/blob/develop/docs/adrs/0004-saga-orquestrada.md);
+a justificativa está no [README do OS Service](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica#saga-orquestrada)).
+A Execução é um participante: recebe comandos do orquestrador, executa a
+transação local no seu PostgreSQL e publica o resultado. Ela não conhece o
+Billing nem altera o status da OS.
+
+```mermaid
+sequenceDiagram
+    participant OS as OS Service (orquestrador)
+    participant EX as Execução
+    OS->>EX: IniciarDiagnosticoMessage
+    EX-->>OS: DiagnosticoIniciadoMessage
+    Note over EX: mecânico registra o resultado e conclui
+    EX-->>OS: DiagnosticoConcluidoMessage (serviços e peças com preço)
+    Note over OS: orçamento aprovado no Billing
+    OS->>EX: ReservarPecasMessage
+    alt estoque suficiente
+        EX-->>OS: PecasReservadasMessage
+    else falta peça
+        EX-->>OS: EstoqueInsuficienteMessage
+        Note over EX: reposição atende a reserva pendente (FIFO)
+        EX-->>OS: PecasReservadasMessage
+    end
+    OS->>EX: IniciarExecucaoMessage
+    Note over EX: reparo na fila de execução
+    EX-->>OS: ExecucaoFinalizadaMessage
+```
+
+A falta de estoque é a compensação que passa pela Execução: o OS segura a OS em
+`AguardandoEstoque` e a retoma quando a reposição completa a reserva.
+
+## Contratos
+
+Todas as mensagens têm versão 1, `MessageId` (idempotência pela Inbox) e
+`CorrelationId` (a saga da OS). O catálogo completo está no
+[repositório do OS Service](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/blob/develop/docs/mensageria/catalogo.md).
+
+### Comandos consumidos (SQS)
+
+| Mensagem | Fila | O que faz |
+|---|---|---|
+| `IniciarDiagnosticoMessage` | `...-execucao-iniciar-diagnostico` | Abre o diagnóstico da OS (idempotente) |
+| `ReservarPecasMessage` | `...-execucao-reservar-pecas` | Reserva as peças do orçamento aprovado |
+| `IniciarExecucaoMessage` | `...-execucao-iniciar-reparo` | Coloca a OS na fila de execução |
+
+### Eventos publicados (SNS `tc-grupo160-<ambiente>-execucao-events`)
+
+| Mensagem | Quando |
+|---|---|
+| `DiagnosticoIniciadoMessage` | Diagnóstico aberto |
+| `DiagnosticoConcluidoMessage` | Diagnóstico concluído, com serviços e peças precificados |
+| `PecasReservadasMessage` | Todas as peças reservadas (inclusive depois de reposição) |
+| `EstoqueInsuficienteMessage` | Reserva parcial; informa o que falta |
+| `ExecucaoFinalizadaMessage` | Reparo concluído |
+
+### Endpoints
+
+| Método | Rota | Uso |
+|---|---|---|
+| `POST` | `/api/v1/catalogo/itens/consultar` | Snapshots comerciais para o OS Service (síncrono, na abertura da OS) |
+| `POST` | `/api/v1/diagnosticos` | Abrir diagnóstico manualmente |
+| `GET` | `/api/v1/diagnosticos/ordem-servico/{ordemServicoId}` | Consultar o diagnóstico |
+| `PUT` / `GET` | `/api/v1/diagnosticos/ordem-servico/{ordemServicoId}/resultado` | Registrar e consultar o resultado técnico |
+| `PATCH` | `/api/v1/diagnosticos/ordem-servico/{ordemServicoId}/concluir` | Concluir o diagnóstico (publica `DiagnosticoConcluidoMessage`) |
+| `POST` | `/api/v1/estoque/pecas/{pecaId}/reposicoes` | Entrada de estoque; atende reservas pendentes |
+| `GET` | `/api/v1/execucoes/fila` | Fila de execução |
+| `GET` | `/api/v1/execucoes/ordem-servico/{ordemServicoId}` | Consultar a execução da OS |
+| `PATCH` | `/api/v1/execucoes/ordem-servico/{ordemServicoId}/finalizar` | Finalizar o reparo (publica `ExecucaoFinalizadaMessage`) |
+
+O contrato OpenAPI está em [docs/openapi/execucao.json](docs/openapi/execucao.json)
+e os contratos internos, em [docs/API_CONTRACTS.md](docs/API_CONTRACTS.md). Na
+AWS, as rotas chegam pelo API Gateway (com o authorizer JWT) e pelo ALB, que
+encaminha `/api/v1/catalogo*`, `/api/v1/diagnosticos*`, `/api/v1/estoque*` e
+`/api/v1/execucoes*` à Execução.
 
 ## Stack
 
 .NET 10 · ASP.NET Core · Clean Architecture (API → Application → Domain → Infrastructure) · MediatR com `ValidationBehavior` · FluentValidation · logs em JSON · Datadog .NET Tracer na imagem.
 
-Banco: PostgreSQL em instância RDS própria, provisionado pela [F4-12](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/issues/143). A integração assíncrona usa SNS/SQS, Outbox e Inbox; no Docker local, esses recursos são fornecidos pelo LocalStack do OS Service.
+Banco: PostgreSQL em instância RDS própria (`tc-grupo160-<ambiente>-execucao`), provisionada no [tech-challenge-infra-database](https://github.com/tech-challenge-grupo-160/tech-challenge-infra-database) pela [F4-12](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/issues/143) ([ADR-0006](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/blob/develop/docs/adrs/0006-banco-por-servico.md)). Nenhum outro serviço acessa esse banco. A integração assíncrona usa SNS/SQS, Outbox e Inbox; no Docker local, esses recursos são fornecidos pelo LocalStack do OS Service.
 
 ## Estrutura
 
@@ -106,6 +183,27 @@ dotnet test Fiap.TechChallenge.OficinaMecanica.Execucao.slnx --collect:"XPlat Co
 
 A meta da fase é cobertura mínima de 80%, verificada no SonarCloud ([F4-09](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/issues/140)).
 
+**Cobertura:** 91,5% na última análise de PR, com o quality gate aprovado
+([painel no SonarCloud](https://sonarcloud.io/summary/overall?id=tech-challenge-grupo-160_tech-challenge-oficina-mecanica-execucao)).
+O badge no topo mostra a análise da branch principal.
+
+O fluxo completo da OS, com as compensações, é coberto pelo
+[BDD do OS Service](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica#bdd-do-fluxo-completo-da-os-f4-36).
+
+## Pipeline
+
+O [`pipeline.yml`](.github/workflows/pipeline.yml) chama o pipeline reutilizável
+[`servico-dotnet.yml@v1`](https://github.com/tech-challenge-grupo-160/tech-challenge-pipelines):
+
+| Gatilho | O que roda |
+|---|---|
+| PR para `develop`, `homolog` ou `main` | build, testes, SonarCloud e build da imagem |
+| push na `homolog` / `main` | imagem no ECR e deploy no EKS de homologação / produção |
+| disparo manual | deploy no ambiente escolhido (dev) |
+
+O `terraform-messaging.yml` cuida da mensageria (`infra/`): roda o plan nos
+PRs e aplica no push da `develop`.
+
 ## Fluxo de branches
 
-`feature/*` → `develop` → `homolog` → `main`, com Conventional Commits. Detalhes no [CONTRIBUTING do repositório principal](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/blob/develop/CONTRIBUTING.md).
+`feature/*` → `develop` → `homolog` → `main`, com Conventional Commits; `homolog` e `main` só recebem alterações por PR. Detalhes no [CONTRIBUTING do repositório principal](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/blob/develop/CONTRIBUTING.md).
