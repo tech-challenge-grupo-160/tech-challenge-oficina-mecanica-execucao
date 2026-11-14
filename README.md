@@ -131,18 +131,14 @@ A infraestrutura de mensageria e os passos de provisionamento estão em
 dotnet run --project src/API/Fiap.TechChallenge.OficinaMecanica.Execucao.Api.csproj
 ```
 
-Ou com Docker:
-
-Crie um arquivo `.env` local (ignorado pelo Git) com a senha do PostgreSQL e a
-connection string utilizada pela API:
-
-```dotenv
-POSTGRES_PASSWORD=<senha-local>
-API_CONNECTION_STRING=Host=postgres;Database=oficina_execucao;Username=postgres;Password=<senha-local>
-```
+Ou com Docker. A mensageria usa o LocalStack que sobe no compose do OS Service;
+para o fluxo completo com os três serviços, siga o
+[guia de execução local](https://github.com/tech-challenge-grupo-160/tech-challenge-oficina-mecanica/blob/develop/docs/EXECUCAO-LOCAL.md).
+O `.env.example` já tem valores que funcionam localmente:
 
 ```bash
-docker compose up --build
+cp .env.example .env
+docker compose up -d --build
 ```
 
 A API sobe em `http://localhost:8082`, com Swagger em `/swagger` no ambiente de desenvolvimento.
