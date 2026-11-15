@@ -2,6 +2,7 @@ using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Data;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Logging;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Observability;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Shared.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,27 +54,48 @@ public sealed class OutboxSnsPublisherWorker(
 
         foreach (var mensagem in mensagens)
         {
+            var ordemServicoId = OutboxLogContexto.LerOrdemServicoId(mensagem.Payload);
+            // A publicacao continua o trace de quem gravou a mensagem; se foi uma
+            // requisicao HTTP (etapa humana), o trace da Saga (F4-31).
+            var contextoDaSaga = await context.InboxMessages
+                .AsNoTracking()
+                .Where(item => item.CorrelationId == mensagem.CorrelationId && item.TraceContext != null)
+                .OrderByDescending(item => item.ProcessadoEm)
+                .Select(item => item.TraceContext)
+                .FirstOrDefaultAsync(cancellationToken);
+            using var span = MensageriaTrace.IniciarPublicacao(
+                MensageriaTrace.EscolherContextoPai(mensagem.TraceContext, contextoDaSaga),
+                mensagem.Tipo,
+                MensageriaTrace.SistemaSns,
+                mensagem.Destino,
+                mensagem.CorrelationId,
+                ordemServicoId);
             using var contexto = logger.Iniciar(
                 mensagem.CorrelationId,
-                OutboxLogContexto.LerOrdemServicoId(mensagem.Payload),
+                ordemServicoId,
                 mensagem.Id,
                 mensagem.Tipo);
             try
             {
+                var atributos = new Dictionary<string, MessageAttributeValue>
+                {
+                    ["tipo"] = new() { DataType = "String", StringValue = mensagem.Tipo }
+                };
+                if (MensageriaTrace.CapturarContextoAtual() is { } traceContext)
+                    atributos[MensageriaTrace.AtributoMensagem] = new() { DataType = "String", StringValue = traceContext };
+
                 await sns.PublishAsync(new PublishRequest
                 {
                     TopicArn = options.Value.EventosTopicArn,
                     Message = mensagem.Payload,
-                    MessageAttributes = new Dictionary<string, MessageAttributeValue>
-                    {
-                        ["tipo"] = new() { DataType = "String", StringValue = mensagem.Tipo }
-                    }
+                    MessageAttributes = atributos
                 }, cancellationToken);
                 mensagem.MarcarPublicada(DateTimeOffset.UtcNow);
                 logger.LogInformation("Evento {TipoMensagem} publicado.", mensagem.Tipo);
             }
             catch (Exception exception)
             {
+                span.Span.SetException(exception);
                 mensagem.RegistrarFalha(exception.Message);
                 logger.LogWarning(exception, "Falha ao publicar evento {MessageId}.", mensagem.Id);
             }

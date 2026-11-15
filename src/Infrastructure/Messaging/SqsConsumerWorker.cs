@@ -6,6 +6,8 @@ using Fiap.TechChallenge.OficinaMecanica.Execucao.Application.Messaging;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Shared.Logging;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Domain.Entities;
 using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Data;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Logging;
+using Fiap.TechChallenge.OficinaMecanica.Execucao.Infrastructure.Observability;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -39,7 +41,9 @@ public abstract class SqsConsumerWorker<TMessage>(
                     QueueUrl = QueueUrl,
                     MaxNumberOfMessages = 10,
                     WaitTimeSeconds = 10,
-                    VisibilityTimeout = 30
+                    VisibilityTimeout = 30,
+                    // Contexto do trace de quem publicou (F4-31).
+                    MessageAttributeNames = [MensageriaTrace.AtributoMensagem]
                 }, stoppingToken);
 
                 foreach (var message in response.Messages ?? [])
@@ -59,10 +63,19 @@ public abstract class SqsConsumerWorker<TMessage>(
 
     private async Task ProcessarAsync(Message message, CancellationToken cancellationToken)
     {
+        // Processa como filho do trace de quem publicou (F4-31).
+        using var span = MensageriaTrace.IniciarConsumo(
+            MensageriaTrace.LerAtributo(message.MessageAttributes),
+            typeof(TMessage).Name,
+            QueueUrl);
         try
         {
             var comando = JsonSerializer.Deserialize<TMessage>(message.Body, JsonOptions)
                 ?? throw new InvalidOperationException($"Mensagem {typeof(TMessage).Name} invalida.");
+            MensageriaTrace.IdentificarMensagem(
+                span,
+                comando.CorrelationId,
+                OutboxLogContexto.LerOrdemServicoId(message.Body));
             if (comando.Versao != 1)
                 throw new InvalidOperationException($"Versao de mensagem nao suportada: {comando.Versao}.");
 
@@ -95,6 +108,7 @@ public abstract class SqsConsumerWorker<TMessage>(
         }
         catch (Exception exception)
         {
+            span.Span.SetException(exception);
             logger.LogError(
                 exception,
                 "Falha ao processar mensagem {TipoMensagem} com ID SQS {SqsMessageId}.",
