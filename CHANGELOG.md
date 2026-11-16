@@ -28,4 +28,5 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Workflow independente para validar, planejar e aplicar a infraestrutura de mensageria por ambiente
 
 ### Fixed
+- Achados do SonarCloud na primeira analise da `main`: `cancellationToken` repassado no `ValidationBehavior` e no health check, download do tracer do Datadog so por HTTPS, `DD_ENV` padrao sem `Development` e porta HTTP por `ASPNETCORE_HTTP_PORTS` no lugar de URL em texto claro
 - Credenciais removidas da configuracao versionada
