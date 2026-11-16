@@ -8,9 +8,11 @@ builder.ConfigureApiLogging();
 
 builder.Services.AddApiServices();
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+await app.MigrateDatabaseAsync();
 
 app.UseApiPipeline(builder.Configuration);
 app.LogStartupUrls();
