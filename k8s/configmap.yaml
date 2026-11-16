@@ -7,4 +7,4 @@ metadata:
     app.kubernetes.io/part-of: oficina-mecanica
 data:
   ASPNETCORE_ENVIRONMENT: "Production"
-  ASPNETCORE_URLS: "http://+:8080"
+  ASPNETCORE_HTTP_PORTS: "8080"
